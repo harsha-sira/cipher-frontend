@@ -82,6 +82,7 @@ export default class Upload extends Component {
 
   onClickHandler = () => {
     const data = new FormData();
+    var downloadFilename;
     data.append("file", this.state.selectedFile);
     axios
       .post("https://localhost:5001/api/v1/Files/Upload", data, {
@@ -105,10 +106,11 @@ export default class Upload extends Component {
             }
           })
           .then(res => {
+            downloadFilename = res.data.filename;
             axios
               .get("https://localhost:5001/api/v1/files/download", {
                 params: {
-                  filename: res.data.fileName
+                  filename: res.data.filename
                 },
                 onUploadProgress: ProgressEvent => {
                   this.setState({
@@ -117,8 +119,22 @@ export default class Upload extends Component {
                 }
               })
               .then(res => {
-                  
-                toast.success("download success");
+                
+                const url = window.URL.createObjectURL(new Blob([res.data]));
+                const link = document.createElement("a");
+                link.href = url;
+                
+                link.setAttribute("download", downloadFilename);
+
+                // // 3. Append to html page
+                document.body.appendChild(link);
+
+                // // 4. Force download
+                link.click();
+                
+                // // 5. Clean up and remove the link
+                link.parentNode.removeChild(link);
+                toast.success("Downloaded");
               })
               .catch(err => {
                 toast.error("Download fail");
