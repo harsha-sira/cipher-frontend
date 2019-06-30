@@ -1,7 +1,6 @@
-import React from 'react';
-import './App.css';
-import Upload from './component/Upload';
-
+import React from "react";
+import "./App.css";
+import Upload from "./component/Upload";
 
 function App() {
   return (
