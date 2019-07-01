@@ -1,0 +1,21 @@
+.container{
+    align-content: center;
+    height:100%;
+}
+
+.label{
+    align-content: center;
+    color: blue;
+    font-style: oblique;
+}
+
+.label-state{
+    align-content: center;
+    color: red;
+    padding-top: 2%;
+    font-style: oblique;
+}
+.col-centered{
+    float: none;
+    margin: 0 auto;
+}

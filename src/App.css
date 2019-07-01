@@ -1,5 +1,12 @@
 .App {
   text-align: center;
+  background-color:azure
+}
+
+.header{
+    color: purple;
+    text-align: center;
+    font-style: oblique;
 }
 
 .App-logo {

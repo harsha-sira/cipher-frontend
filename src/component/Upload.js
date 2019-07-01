@@ -1,8 +1,17 @@
 import React, { Component } from "react";
 import axios from "axios";
-import { Progress } from "reactstrap";
+import {
+  Button,
+  FormGroup,
+  Label,
+  Input,
+  FormText,
+  Progress
+} from "reactstrap";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import "./upload.css";
+import "bootstrap/dist/css/bootstrap.css";
 
 export default class Upload extends Component {
   constructor(props) {
@@ -10,7 +19,7 @@ export default class Upload extends Component {
     this.state = {
       selectedFile: null,
       loaded: 0,
-      filename: ""
+      stage: null
     };
   }
 
@@ -22,14 +31,15 @@ export default class Upload extends Component {
     ) {
       this.setState({
         selectedFile: event.target.files[0],
-        loaded: 0
+        loaded: 0,
+        stage: null
       });
     }
   };
 
   checkFileSize = event => {
     let file = event.target.files[0];
-    let size = 300000000; // in bytes
+    let size = 314572800; //300 MB in bytes
     let err = "";
 
     if (file.size > size) {
@@ -83,103 +93,128 @@ export default class Upload extends Component {
   onClickHandler = () => {
     const data = new FormData();
     var downloadFilename;
-    data.append("file", this.state.selectedFile);
-    axios
-      .post("https://localhost:5001/api/v1/Files/Upload", data, {
-        onUploadProgress: ProgressEvent => {
-          this.setState({
-            loaded: (ProgressEvent.loaded / ProgressEvent.total) * 100
-          });
-        }
-      })
-      .then(res => {
-        // then cipher file
-        axios
-          .get("https://localhost:5001/api/v1/cipher/encode", {
-            params: {
-              filename: res.data.fileName
-            },
-            onUploadProgress: ProgressEvent => {
-              this.setState({
-                loaded: (ProgressEvent.loaded / ProgressEvent.total) * 100
-              });
-            }
-          })
-          .then(res => {
-            downloadFilename = res.data.filename;
-            axios
-              .get("https://localhost:5001/api/v1/files/download", {
-                params: {
-                  filename: res.data.filename
-                },
-                onUploadProgress: ProgressEvent => {
+    if (this.state.selectedFile === null) {
+      toast.error("Please select a file before upload.");
+    } else {
+      data.append("file", this.state.selectedFile);
+      axios
+        .post("https://localhost:5001/api/v1/Files/Upload", data, {
+          onUploadProgress: ProgressEvent => {
+            this.setState({
+              loaded: (ProgressEvent.loaded / ProgressEvent.total) * 100,
+              stage: "Uploading"
+            });
+          }
+        })
+        .then(res => {
+          // then cipher file
+          console.log("cipher start");
+          axios
+            .get("https://localhost:5001/api/v1/cipher/encode", {
+              params: {
+                filename: res.data.fileName
+              },
+              onUploadProgress: ProgressEvent => {
+                this.setState({
+                  loaded: (ProgressEvent.loaded / ProgressEvent.total) * 100,
+                  stage: "Encoding"
+                });
+              }
+            })
+            .then(res => {
+              console.log("download start");
+              downloadFilename = res.data.filename;
+              axios
+                .get("https://localhost:5001/api/v1/files/download", {
+                  params: {
+                    filename: res.data.filename
+                  },
+                  onUploadProgress: ProgressEvent => {
+                    this.setState({
+                      loaded:
+                        (ProgressEvent.loaded / ProgressEvent.total) * 100,
+                      stage: "downloading"
+                    });
+                  }
+                })
+                .then(res => {
+                  const url = window.URL.createObjectURL(new Blob([res.data]));
+                  const link = document.createElement("a");
+                  link.href = url;
+
+                  link.setAttribute("download", downloadFilename);
+
+                  // // 3. Append to html page
+                  document.body.appendChild(link);
+
+                  // // 4. Force download
+                  link.click();
+
+                  // // 5. Clean up and remove the link
+                  link.parentNode.removeChild(link);
+                  toast.success("Downloaded");
                   this.setState({
-                    loaded: (ProgressEvent.loaded / ProgressEvent.total) * 100
+                    loaded: 0,
+                    stage: null
                   });
-                }
-              })
-              .then(res => {
-                
-                const url = window.URL.createObjectURL(new Blob([res.data]));
-                const link = document.createElement("a");
-                link.href = url;
-                
-                link.setAttribute("download", downloadFilename);
-
-                // // 3. Append to html page
-                document.body.appendChild(link);
-
-                // // 4. Force download
-                link.click();
-                
-                // // 5. Clean up and remove the link
-                link.parentNode.removeChild(link);
-                toast.success("Downloaded");
-              })
-              .catch(err => {
-                toast.error("Download fail");
-              });
-          })
-          .catch(err => {
-            toast.error("Cipher fail");
-          });
-      })
-      .catch(err => {
-        // then print response status
-        toast.error("upload fail");
-      });
+                  console.log(this.state.stage);
+                })
+                .catch(err => {
+                  toast.error("Downloading failed");
+                });
+            })
+            .catch(err => {
+              toast.error("Encription failed");
+            });
+        })
+        .catch(err => {
+          // then print response status
+          toast.error("Upload failed");
+        });
+    }
   };
 
   render() {
     return (
-      <div class="container">
-        <div class="row">
-          <div class="offset-md-3 col-md-6">
-            <div class="form-group files">
-              <label>Upload Your File </label>
-              <input
-                type="file"
-                className="form-control"
-                name="file"
-                onChange={this.onChangeHandler}
-              />
+      <div className="container">
+        <div className="row">
+          <div className="offset-md-3 col-md-6">
+            <div className="form-group files">
+              <Label className="label">Upload Your File </Label>
+              <FormGroup className="form-control">
+                <Input
+                  type="file"
+                  name="file"
+                  id="file"
+                  onChange={this.onChangeHandler}
+                />
+                <FormText color="muted">
+                  Insert .txt file with the size less than 300MB.
+                </FormText>
+              </FormGroup>
             </div>
-            <div class="form-group">
-              <ToastContainer />
-              <div class="offset-md-3 col-md-6">
+            <div className="form-group">
+              <ToastContainer
+                position="top-right"
+                autoClose={2000}
+                draggable={true}
+              />
+
+              <label className="label-state">{this.state.stage}</label>
+              <div className="offset-md-2 col-md-8">
                 <Progress max="100" color="success" value={this.state.loaded}>
                   {Math.round(this.state.loaded, 2)}%
                 </Progress>
               </div>
             </div>
 
-            <button
+            <Button
               type="button"
-              class="btn btn-success btn-block"
+              className="btn btn-success col-md-8 col-md-offset-4"
               onClick={this.onClickHandler}
             >
               Upload and encode file
-            </button>
+            </Button>
           </div>
         </div>
       </div>

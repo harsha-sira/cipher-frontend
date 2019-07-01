@@ -5,7 +5,8 @@ import Upload from "./component/Upload";
 function App() {
   return (
     <div className="App">
-      <h1>Cipher Front End</h1>
+      <h1 className="header">Caesar Cipher Encryption demo</h1>
+      <br/>
       <Upload/>
     </div>
   );
